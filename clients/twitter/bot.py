@@ -21,8 +21,24 @@ class MyClient():
         self.name = 'twitter'
         self.TWEET_MAX = 280
         self.TCO_URL_LENGTH = 23
-        self.client_v1 = self.get_x_v1()
-        self.client_v2 = self.get_x_v2()
+
+        # Check if credentials are configured
+        if not all([environment.X_API_KEY, environment.X_API_SECRET,
+                    environment.X_ACCESS_TOKEN, environment.X_ACCESS_TOKEN_SECRET]):
+            logger.warning("Twitter/X credentials not configured - skipping setup")
+            self.client_v1 = None
+            self.client_v2 = None
+            return
+
+        try:
+            self.client_v1 = self.get_x_v1()
+            self.client_v2 = self.get_x_v2()
+            logger.info("Twitter/X clients initialized successfully")
+        except Exception as e:
+            logger.error(f"Twitter/X initialization failed: {e}")
+            logger.warning("Bot will continue without Twitter/X integration")
+            self.client_v1 = None
+            self.client_v2 = None
 
     def get_follower_count(self) -> dict[str, int | str]:
         """Returns the number of followers of the twitter account."""
