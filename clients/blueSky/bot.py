@@ -17,7 +17,18 @@ class MyClient():
     def __init__(self):
         self.name = 'bluesky'
         self.client = Client()
-        self.client.login(environment.BSKY_USER, environment.BSKY_PASSWORD)
+
+        # Check if credentials are configured
+        if not environment.BSKY_USER or not environment.BSKY_PASSWORD:
+            logger.warning("Bluesky credentials not configured - skipping login")
+            return
+
+        try:
+            self.client.login(environment.BSKY_USER, environment.BSKY_PASSWORD)
+            logger.info("Bluesky login successful")
+        except Exception as e:
+            logger.error(f"Bluesky login failed: {e}")
+            logger.warning("Bot will continue without Bluesky integration")
 
 
     def get_follower_count(self) -> dict[str, int | str]:
