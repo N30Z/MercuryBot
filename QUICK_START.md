@@ -124,6 +124,8 @@ Replace `YOUR_CLIENT_ID` with your Application ID from the portal.
 
 ### 🔹 MongoDB Connection String
 
+**Option 1: Cloud (MongoDB Atlas) - Einfach & Empfohlen**
+
 1. Create free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 2. Create a **Free Shared Cluster**
 3. Click **Connect** → **Connect your application**
@@ -135,6 +137,22 @@ Example:
 ```
 mongodb+srv://botuser:MySecureP@ss123@cluster0.abcde.mongodb.net/
 ```
+
+**Option 2: Lokale MongoDB - Für Fortgeschrittene**
+
+🚀 **Automatisches Setup (Empfohlen):**
+
+```bash
+# Linux/macOS:
+./setup_mongodb.sh
+
+# Alle Plattformen (Python):
+python setup_mongodb.py
+```
+
+Die interaktiven Scripts führen dich durch die komplette lokale Installation!
+
+📖 **Manuelle Installation:** Siehe [MONGODB_LOCAL.md](MONGODB_LOCAL.md)
 
 ### 🔹 Your Discord User ID
 
