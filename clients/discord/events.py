@@ -120,3 +120,88 @@ def setup_events(client):
                 )
         except Exception as e:
             logger.info("Failed to send feedback request to guild owner")
+
+    # MARK: on_raw_reaction_add
+    @client.event
+    async def on_raw_reaction_add(payload):
+        # Ignore bot reactions
+        if payload.user_id == client.user.id:
+            return
+
+        # Get guild and member
+        guild = client.get_guild(payload.guild_id)
+        if not guild:
+            return
+
+        member = guild.get_member(payload.user_id)
+        if not member:
+            return
+
+        # Get the emoji string
+        emoji_str = str(payload.emoji.id) if payload.emoji.id else str(payload.emoji)
+
+        # Check if this emoji belongs to any of our platforms
+        platform_role = None
+        for store in client.modules:
+            if store.discord_emoji:
+                store_emoji_str = str(store.discord_emoji)
+                if emoji_str == store_emoji_str:
+                    # Find the corresponding role
+                    role_name = f"{store.service_name} Games"
+                    platform_role = discord.utils.get(guild.roles, name=role_name)
+
+                    # Create role if it doesn't exist
+                    if not platform_role:
+                        try:
+                            platform_role = await guild.create_role(
+                                name=role_name,
+                                mentionable=True,
+                                reason="Auto-created for platform notifications"
+                            )
+                            logger.info(f"Created role {role_name} for {guild.name}")
+                        except Exception as e:
+                            logger.error(f"Failed to create role {role_name}: {e}")
+                            return
+                    break
+
+        # Assign the role if we found a matching platform
+        if platform_role:
+            try:
+                await member.add_roles(platform_role, reason="Reaction role")
+                logger.info(f"Added role {platform_role.name} to {member.name}")
+            except Exception as e:
+                logger.error(f"Failed to add role: {e}")
+
+    # MARK: on_raw_reaction_remove
+    @client.event
+    async def on_raw_reaction_remove(payload):
+        # Get guild and member
+        guild = client.get_guild(payload.guild_id)
+        if not guild:
+            return
+
+        member = guild.get_member(payload.user_id)
+        if not member:
+            return
+
+        # Get the emoji string
+        emoji_str = str(payload.emoji.id) if payload.emoji.id else str(payload.emoji)
+
+        # Check if this emoji belongs to any of our platforms
+        platform_role = None
+        for store in client.modules:
+            if store.discord_emoji:
+                store_emoji_str = str(store.discord_emoji)
+                if emoji_str == store_emoji_str:
+                    # Find the corresponding role
+                    role_name = f"{store.service_name} Games"
+                    platform_role = discord.utils.get(guild.roles, name=role_name)
+                    break
+
+        # Remove the role if we found a matching platform
+        if platform_role:
+            try:
+                await member.remove_roles(platform_role, reason="Reaction role removed")
+                logger.info(f"Removed role {platform_role.name} from {member.name}")
+            except Exception as e:
+                logger.error(f"Failed to remove role: {e}")
