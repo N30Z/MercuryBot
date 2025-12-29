@@ -54,23 +54,38 @@ class Database(object):
     @staticmethod
     def insert_discord_server(data):
         '''
-        Inserts or updates the discord server database 
+        Inserts or updates the discord server database
         according to the server id field ['server':'xxxxxxx']
         '''
-        for server_info in data:
-            filter_criteria = {"server":server_info['server']}
-            Database.servers['discord'].update_one(filter_criteria, {"$set":server_info}, upsert=True)
+        try:
+            for server_info in data:
+                filter_criteria = {"server":server_info['server']}
+                Database.servers['discord'].update_one(filter_criteria, {"$set":server_info}, upsert=True)
+        except Exception as e:
+            logger.error("Failed to insert/update Discord server in database: %s", e,
+                        extra={'_error_type': type(e).__name__})
+            if 'not authorized' in str(e).lower():
+                logger.error("MongoDB authorization error. Please check database user permissions. "
+                           "The user needs read/write access to the 'servers' database.")
 
 
     @staticmethod
     def get_discord_servers():
         '''
-        Return list of the discord servers with their corresponding notification role and channel. 
+        Return list of the discord servers with their corresponding notification role and channel.
         '''
-        data = []
-        for document in Database.servers['discord'].find():
-            data.append(document)
-        return data
+        try:
+            data = []
+            for document in Database.servers['discord'].find():
+                data.append(document)
+            return data
+        except Exception as e:
+            logger.error("Failed to get Discord servers from database: %s", e,
+                        extra={'_error_type': type(e).__name__})
+            if 'not authorized' in str(e).lower():
+                logger.error("MongoDB authorization error. Please check database user permissions. "
+                           "The user needs read/write access to the 'servers' database.")
+            return []
 
 
     @staticmethod
@@ -78,7 +93,15 @@ class Database(object):
         '''
         Return notification role and channel for a given server id.
         '''
-        return Database.servers['discord'].find_one({'server': server_id})
+        try:
+            return Database.servers['discord'].find_one({'server': server_id})
+        except Exception as e:
+            logger.error("Failed to get Discord server %s from database: %s", server_id, e,
+                        extra={'_error_type': type(e).__name__})
+            if 'not authorized' in str(e).lower():
+                logger.error("MongoDB authorization error. Please check database user permissions. "
+                           "The user needs read/write access to the 'servers' database.")
+            return None
 
 
     @staticmethod
@@ -87,26 +110,33 @@ class Database(object):
         Removes the server from the database when the bot is kicked.
         Important so it doesnt try to send messages to a server its no longer connected to.
         '''
-        server = Database.servers['discord'].find_one({'server': guildId})
+        try:
+            server = Database.servers['discord'].find_one({'server': guildId})
 
-        if not server:
-            logger.info('Document for server %s was not found', guildId)
-            return
-        
-        joined_date = server.get('joined')
-        duration = 0
-        if joined_date:
-            duration = datetime.now(timezone.utc) - joined_date.replace(tzinfo=timezone.utc)
+            if not server:
+                logger.info('Document for server %s was not found', guildId)
+                return
 
-        result = Database.servers['discord'].delete_one({'server': guildId})
+            joined_date = server.get('joined')
+            duration = 0
+            if joined_date:
+                duration = datetime.now(timezone.utc) - joined_date.replace(tzinfo=timezone.utc)
 
-        # Check if the document was deleted successfully
-        if result.deleted_count == 1:
-            logger.info('Document deleted successfully for %s', guildId,
-                        extra={'_Joined for:': duration, '_detailed': server}    
-            )
-        else:
-            logger.info('No server found.')
+            result = Database.servers['discord'].delete_one({'server': guildId})
+
+            # Check if the document was deleted successfully
+            if result.deleted_count == 1:
+                logger.info('Document deleted successfully for %s', guildId,
+                            extra={'_Joined for:': duration, '_detailed': server}
+                )
+            else:
+                logger.info('No server found.')
+        except Exception as e:
+            logger.error("Failed to remove server %s from database: %s", guildId, e,
+                        extra={'_error_type': type(e).__name__})
+            if 'not authorized' in str(e).lower():
+                logger.error("MongoDB authorization error. Please check database user permissions. "
+                           "The user needs read/write access to the 'servers' database.")
 
 
     @staticmethod

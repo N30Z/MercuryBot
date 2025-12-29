@@ -131,13 +131,22 @@ def test_notification_page():
     servers = []
     if discord_client:
         for guild in discord_client.guilds:
-            server_data = Database.get_discord_server(guild.id)
-            servers.append({
-                'id': guild.id,
-                'name': guild.name,
-                'channel_id': server_data.get('channel') if server_data else None,
-                'has_channel': bool(server_data and server_data.get('channel'))
-            })
+            try:
+                server_data = Database.get_discord_server(guild.id)
+                servers.append({
+                    'id': guild.id,
+                    'name': guild.name,
+                    'channel_id': server_data.get('channel') if server_data else None,
+                    'has_channel': bool(server_data and server_data.get('channel'))
+                })
+            except Exception as e:
+                logger.error(f"Failed to get server data for {guild.id}: {e}")
+                servers.append({
+                    'id': guild.id,
+                    'name': guild.name,
+                    'channel_id': None,
+                    'has_channel': False
+                })
 
     stores = []
     if discord_client and discord_client.modules:
@@ -224,9 +233,13 @@ def send_test_notification():
         return jsonify({'success': False, 'error': 'Store has no data to send'}), 400
 
     # Get server info
-    server_data = Database.get_discord_server(server_id)
-    if not server_data or not server_data.get('channel'):
-        return jsonify({'success': False, 'error': 'Server has no channel configured'}), 400
+    try:
+        server_data = Database.get_discord_server(server_id)
+        if not server_data or not server_data.get('channel'):
+            return jsonify({'success': False, 'error': 'Server has no channel configured'}), 400
+    except Exception as e:
+        logger.error(f"Database error while getting server {server_id}: {e}")
+        return jsonify({'success': False, 'error': 'Database error occurred'}), 500
 
     # Send test notification
     async def send_test():
