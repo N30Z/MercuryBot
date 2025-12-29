@@ -35,7 +35,13 @@ class RateUsButton(discord.ui.Button):
 # MARK: BackButton
 class BackButton(discord.ui.Button):
     def __init__(self, client, settings_message):
-        backBtn = discord.PartialEmoji(name="back", id=os.getenv('DISCORD_BACK_BTN'))
+        # Handle both custom and Unicode emojis
+        back_emoji_value = os.getenv('DISCORD_BACK_BTN')
+        if back_emoji_value and back_emoji_value.isdigit():
+            backBtn = discord.PartialEmoji(name="back", id=int(back_emoji_value))
+        else:
+            backBtn = back_emoji_value if back_emoji_value else "◀️"
+
         super().__init__(label="Back",emoji=backBtn, style=discord.ButtonStyle.secondary)
         self.client = client
         self.settings_message = settings_message
@@ -134,10 +140,25 @@ class Settings_buttons(discord.ui.View):
             logger.error("Failed to cleanup after /Settings embed")
 
 
+    def _parse_emoji(self, emoji_env_var, fallback_emoji=""):
+        """Parse emoji from environment variable - handles both custom and Unicode emojis"""
+        emoji_value = os.getenv(emoji_env_var)
+
+        # If not set or empty, use fallback
+        if not emoji_value:
+            return fallback_emoji if fallback_emoji else None
+
+        # If it's numeric (custom emoji ID), use PartialEmoji
+        if emoji_value.isdigit():
+            return discord.PartialEmoji(name="custom", id=int(emoji_value))
+
+        # Otherwise treat as Unicode emoji
+        return emoji_value
+
     def create_test_button(self):
         button = discord.ui.Button(
             label="Test notifications",
-            emoji=discord.PartialEmoji(name="test", id=os.getenv('DISCORD_TEST_BTN')),
+            emoji=self._parse_emoji('DISCORD_TEST_BTN', '🧪'),
             style=discord.ButtonStyle.primary
         )
         button.callback = self.test_settings_callback
@@ -146,7 +167,7 @@ class Settings_buttons(discord.ui.View):
     def create_channel_button(self):
         button = discord.ui.Button(
             label="​ Set channel",
-            emoji=discord.PartialEmoji(name="channel", id=os.getenv('DISCORD_CHNL_BTN')),
+            emoji=self._parse_emoji('DISCORD_CHNL_BTN', '💬'),
             style=discord.ButtonStyle.secondary
         )
         button.callback = self.channel_select_callback
@@ -155,7 +176,7 @@ class Settings_buttons(discord.ui.View):
     def create_role_button(self):
         button = discord.ui.Button(
             label="​ Set role",
-            emoji=discord.PartialEmoji(name="role", id=os.getenv('DISCORD_ROLE_BTN')),
+            emoji=self._parse_emoji('DISCORD_ROLE_BTN', '📃'),
             style=discord.ButtonStyle.secondary
         )
         button.callback = self.settings_role_callback
@@ -164,7 +185,7 @@ class Settings_buttons(discord.ui.View):
     def create_store_button(self):
         button = discord.ui.Button(
             label="​ Set stores",
-            emoji=discord.PartialEmoji(name="stores", id=os.getenv('DISCORD_STORE_BTN')),
+            emoji=self._parse_emoji('DISCORD_STORE_BTN', '🎪'),
             style=discord.ButtonStyle.secondary
         )
         button.callback = self.settings_store_callback
@@ -296,9 +317,16 @@ class Role_Select(discord.ui.Select):
         await settings_message.edit(content=None, embed=description_embed, view=view)
 
     def __init__(self, client, interaction, settings_message, default):
-        rolesNoneEmoji = discord.PartialEmoji(name="rolesNone", id=os.getenv('DISCORD_ROLES_NONE'))
-        rolesAtEmoji = discord.PartialEmoji(name="roles", id=os.getenv('DISCORD_ROLES_AT'))
-        rolesAllEmoji = discord.PartialEmoji(name="rolesAll", id=os.getenv('DISCORD_ROLES_ALL'))
+        # Handle both custom and Unicode emojis
+        def parse_emoji(env_var, fallback):
+            value = os.getenv(env_var)
+            if value and value.isdigit():
+                return discord.PartialEmoji(name="custom", id=int(value))
+            return value if value else fallback
+
+        rolesNoneEmoji = parse_emoji('DISCORD_ROLES_NONE', '🚫')
+        rolesAtEmoji = parse_emoji('DISCORD_ROLES_AT', '📢')
+        rolesAllEmoji = parse_emoji('DISCORD_ROLES_ALL', '🌐')
 
         options=[
             discord.SelectOption(label="Dont ping a role", value="None", emoji=rolesNoneEmoji),
@@ -387,7 +415,12 @@ class Store_Select(discord.ui.Select):
                 "value": store.name,
             }
             if store.discord_emoji:
-                kwargs["emoji"] = discord.PartialEmoji(name=store.name, id=store.discord_emoji)
+                # Handle both custom emoji IDs and Unicode emojis
+                if isinstance(store.discord_emoji, int):
+                    kwargs["emoji"] = discord.PartialEmoji(name=store.name, id=store.discord_emoji)
+                else:
+                    # Assume it's a Unicode emoji string
+                    kwargs["emoji"] = store.discord_emoji
 
             options.append(discord.SelectOption(**kwargs))
 
