@@ -16,12 +16,17 @@ def setup_events(client):
         client.add_view(FooterButtons())
         # Check if connected to all guilds stored in db, only applicable if removed while bot was offline
         servers_data = Database.get_discord_servers()
-        guild_ids = [server.id for server in client.guilds]
-        servers_data_ids = [server['server'] for server in servers_data]
 
-        not_in_guilds = [server for server in servers_data_ids if server not in guild_ids]
-        for guild in not_in_guilds:
-            Database.remove_server(guild)
+        # Only proceed with cleanup if we successfully got servers data
+        if servers_data:
+            guild_ids = [server.id for server in client.guilds]
+            servers_data_ids = [server['server'] for server in servers_data]
+
+            not_in_guilds = [server for server in servers_data_ids if server not in guild_ids]
+            for guild in not_in_guilds:
+                Database.remove_server(guild)
+        else:
+            logger.warning("Could not retrieve server data from database. Skipping cleanup check.")
 
         # Update server populations
         BATCH_SIZE = 500

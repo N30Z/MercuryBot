@@ -517,6 +517,94 @@ use mercurybot
 db.getUsers()
 ```
 
+### Authorization-Fehler ("not authorized"):
+
+**Symptom:** Bot startet, aber wirft `OperationFailure: not authorized on servers to execute command`
+
+**Ursache:** Der Bot-User hat keine Zugriffsrechte auf die benötigten Datenbanken.
+
+**Lösung:**
+
+MercuryBot benötigt Zugriff auf **mehrere Datenbanken**:
+- `servers` (bzw. `servers_dev` im Dev-Modus)
+- `deals` (bzw. `deals_dev` im Dev-Modus)
+- `feedback` (bzw. `feedback_dev` im Dev-Modus)
+
+```bash
+# In mongosh als Admin verbinden
+mongosh "mongodb://admin:IhrAdminPasswort@localhost:27017/admin"
+
+# Rechte für Production gewähren
+use servers
+db.createUser({
+  user: "mercurybot",
+  pwd: "BotPasswort456",
+  roles: [{ role: "readWrite", db: "servers" }]
+})
+
+use deals
+db.createUser({
+  user: "mercurybot",
+  pwd: "BotPasswort456",
+  roles: [{ role: "readWrite", db: "deals" }]
+})
+
+use feedback
+db.createUser({
+  user: "mercurybot",
+  pwd: "BotPasswort456",
+  roles: [{ role: "readWrite", db: "feedback" }]
+})
+
+# Für Dev-Modus (optional):
+use servers_dev
+db.createUser({
+  user: "mercurybot",
+  pwd: "BotPasswort456",
+  roles: [{ role: "readWrite", db: "servers_dev" }]
+})
+
+use deals_dev
+db.createUser({
+  user: "mercurybot",
+  pwd: "BotPasswort456",
+  roles: [{ role: "readWrite", db: "deals_dev" }]
+})
+
+use feedback_dev
+db.createUser({
+  user: "mercurybot",
+  pwd: "BotPasswort456",
+  roles: [{ role: "readWrite", db: "feedback_dev" }]
+})
+```
+
+**Alternative:** User mit Rechten auf allen Datenbanken erstellen:
+
+```bash
+# In mongosh als Admin
+use admin
+db.createUser({
+  user: "mercurybot",
+  pwd: "BotPasswort456",
+  roles: [
+    { role: "readWrite", db: "servers" },
+    { role: "readWrite", db: "servers_dev" },
+    { role: "readWrite", db: "deals" },
+    { role: "readWrite", db: "deals_dev" },
+    { role: "readWrite", db: "feedback" },
+    { role: "readWrite", db: "feedback_dev" }
+  ]
+})
+```
+
+**Connection String:**
+```env
+DB_CONNECTION_STRING=mongodb://mercurybot:BotPasswort456@localhost:27017/?authSource=admin
+```
+
+**Wichtig:** Beachte dass der Connection String **keine** spezifische Datenbank enthält (nur Host/Port), da der Bot auf mehrere Datenbanken zugreift.
+
 ---
 
 ## Migration von MongoDB Atlas
