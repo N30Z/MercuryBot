@@ -421,9 +421,10 @@ class Store_Select(discord.ui.Select):
                     kwargs["emoji"] = discord.PartialEmoji(name=store.name, id=store.discord_emoji)
                 elif isinstance(store.discord_emoji, str) and store.discord_emoji.isdigit():
                     kwargs["emoji"] = discord.PartialEmoji(name=store.name, id=int(store.discord_emoji))
-                else:
-                    # Assume it's a Unicode emoji string
-                    kwargs["emoji"] = store.discord_emoji
+                elif isinstance(store.discord_emoji, str) and store.discord_emoji.strip():
+                    # Only use non-empty Unicode emoji strings
+                    kwargs["emoji"] = store.discord_emoji.strip()
+                # If none of the above, skip emoji (don't add to kwargs)
 
             options.append(discord.SelectOption(**kwargs))
 
