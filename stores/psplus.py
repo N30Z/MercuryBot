@@ -6,6 +6,14 @@ from utils import makejson
 from datetime import datetime
 
 
+def _parse_emoji_env(env_var):
+    """Parse emoji environment variable to int or None"""
+    value = os.getenv(env_var)
+    if value and value.isdigit():
+        return int(value)
+    return None
+
+
 class Main(Store):
     """
     psplus store
@@ -15,7 +23,7 @@ class Main(Store):
         super().__init__(
             name = 'psplus',
             id = '4',
-            discord_emoji = os.getenv('DISCORD_PSPLUS_EMOJI'),
+            discord_emoji = _parse_emoji_env('DISCORD_PSPLUS_EMOJI') or 0,
             service_name = 'PlayStation Plus',
             url = 'https://www.playstation.com/en-gr/ps-plus/whats-new/'
         )
