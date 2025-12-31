@@ -5,6 +5,14 @@ from stores._store import Store
 from utils import makejson
 
 
+def _parse_emoji_env(env_var):
+    """Parse emoji environment variable to int or None"""
+    value = os.getenv(env_var)
+    if value and value.isdigit():
+        return int(value)
+    return None
+
+
 class Main(Store):
     '''
     Amazon Prime Gaming store
@@ -14,7 +22,7 @@ class Main(Store):
         super().__init__(
             name='primegaming',
             id='5',
-            discord_emoji=os.getenv('DISCORD_PRIMEGAMING_EMOJI'),
+            discord_emoji=_parse_emoji_env('DISCORD_PRIMEGAMING_EMOJI') or 0,
             twitter_notification=True,
             bsky_notification=True,
             service_name='Amazon Prime Gaming',

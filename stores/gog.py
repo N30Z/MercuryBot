@@ -12,6 +12,14 @@ from utils import makejson
 from stores._store import Store
 
 
+def _parse_emoji_env(env_var):
+    """Parse emoji environment variable to int or None"""
+    value = os.getenv(env_var)
+    if value and value.isdigit():
+        return int(value)
+    return None
+
+
 class Main(Store):
     """
     Gog store
@@ -28,7 +36,7 @@ class Main(Store):
             name = 'gog',
             id = '2',
             twitter_notification = True,
-            discord_emoji = os.getenv('DISCORD_GOG_EMOJI'),
+            discord_emoji = _parse_emoji_env('DISCORD_GOG_EMOJI') or 0,
             service_name = 'gog',
             url = 'https://www.gog.com/games/ajax/filtered?mediaType=game&page=1&price=discounted'
         )

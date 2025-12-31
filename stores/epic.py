@@ -8,9 +8,17 @@ from stores._store import Store
 import gc
 
 
+def _parse_emoji_env(env_var):
+    """Parse emoji environment variable to int or None"""
+    value = os.getenv(env_var)
+    if value and value.isdigit():
+        return int(value)
+    return None
+
+
 class Main(Store):
     '''
-    Epic store 
+    Epic store
     '''
     def __init__(self):
         self.online_data = []
@@ -20,7 +28,7 @@ class Main(Store):
         super().__init__(
             name = 'epic',
             id = '1',
-            discord_emoji = os.getenv('DISCORD_EPIC_EMOJI'),
+            discord_emoji = _parse_emoji_env('DISCORD_EPIC_EMOJI') or 0,
             twitter_notification = True,
             bsky_notification = True,
             service_name = 'Epic Games',

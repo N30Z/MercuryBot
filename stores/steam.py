@@ -7,6 +7,14 @@ import http.cookiejar
 from datetime import datetime
 
 
+def _parse_emoji_env(env_var):
+    """Parse emoji environment variable to int or None"""
+    value = os.getenv(env_var)
+    if value and value.isdigit():
+        return int(value)
+    return None
+
+
 class Main(Store):
     """
     Steam store
@@ -18,7 +26,7 @@ class Main(Store):
         super().__init__(
             name = 'steam',
             id = '3',
-            discord_emoji = os.getenv('DISCORD_STEAM_EMOJI'),
+            discord_emoji = _parse_emoji_env('DISCORD_STEAM_EMOJI') or 0,
             twitter_notification=True,
             service_name = 'Steam',
             scheduler_time=7200,
