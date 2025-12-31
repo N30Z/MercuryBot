@@ -417,10 +417,15 @@ class Store_Select(discord.ui.Select):
             if store.discord_emoji:
                 # Handle both custom emoji IDs and Unicode emojis
                 # Check if it's an integer or a string that's all digits
-                if isinstance(store.discord_emoji, int):
-                    kwargs["emoji"] = discord.PartialEmoji(name=store.name, id=store.discord_emoji)
+                if isinstance(store.discord_emoji, int) and store.discord_emoji > 0:
+                    # Discord custom emoji IDs are snowflake IDs (18+ digits, very large numbers)
+                    # Only create PartialEmoji if ID is realistic (> 1 trillion = valid snowflake range)
+                    if store.discord_emoji >= 1000000000000:
+                        kwargs["emoji"] = discord.PartialEmoji(name=store.name, id=store.discord_emoji)
                 elif isinstance(store.discord_emoji, str) and store.discord_emoji.isdigit():
-                    kwargs["emoji"] = discord.PartialEmoji(name=store.name, id=int(store.discord_emoji))
+                    emoji_id = int(store.discord_emoji)
+                    if emoji_id >= 1000000000000:
+                        kwargs["emoji"] = discord.PartialEmoji(name=store.name, id=emoji_id)
                 elif isinstance(store.discord_emoji, str) and store.discord_emoji.strip():
                     # Only use non-empty Unicode emoji strings
                     kwargs["emoji"] = store.discord_emoji.strip()
