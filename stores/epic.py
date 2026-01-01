@@ -199,23 +199,33 @@ class Main(Store):
                 delta = date - datetime.now()
                 # if the time has come, Get the deals 5 minutes after they go live
                 if delta.total_seconds() <= 0:
-                    print("EPIC -> End date of deal is today i'll wait 10 minutes and get new games")
+                    self.logger.info("EPIC -> Deal ended, waiting 10 minutes to check for new games", extra={
+                        '_end_date': date,
+                        '_now': datetime.now()
+                    })
                     await asyncio.sleep(600)
                     return self
                 # if deal ends in the next 24-hours just wait for it.
                 elif delta.total_seconds() <= 86400:
-                    self.logger.info(f"EPIC:: Waiting for {delta.total_seconds()}", extra={
-                        '_game_time': date,
-                        '_datetime.now': datetime.now()
+                    self.logger.info(f"EPIC -> Waiting {delta.total_seconds():.0f} seconds until deal ends", extra={
+                        '_end_date': date,
+                        '_now': datetime.now(),
+                        '_wait_seconds': delta.total_seconds()
                     })
 
                     await asyncio.sleep(delta.total_seconds())
+                    return self
                 # if deal doesn't end in the next 24 hours check if the games changed every 30-minutes
                 else:
+                    self.logger.info(f"EPIC -> Next deal ends in {delta.total_seconds()/3600:.1f} hours, checking again in 30 minutes", extra={
+                        '_end_date': date,
+                        '_now': datetime.now(),
+                        '_hours_until_end': delta.total_seconds()/3600
+                    })
                     await asyncio.sleep(self.scheduler_time)
                     return self
             else:
-                print("self.data was empty")
+                self.logger.warning("EPIC -> No data available, retrying in 60 seconds")
                 await asyncio.sleep(60)
 
     async def set_images(self):
