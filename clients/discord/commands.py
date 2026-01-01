@@ -185,6 +185,69 @@ def define_commands(self):
             logger.error(f"Failed to send test notification: {e}")
             await interaction.followup.send("❌ Failed to send test notification. Please try again.", ephemeral=True)
 
+    # MARK: Refresh
+    @app_commands.default_permissions(manage_guild=True)
+    @self.tree.command(name='refresh', description="Manually refresh free games data from all stores")
+    @app_commands.choices(store_choice=[app_commands.Choice(name="All Stores", value="all")] + [app_commands.Choice(name=store.service_name, value=store.name) for store in self.modules])
+    @app_commands.describe(store_choice='Select which store to refresh (default: all stores)')
+    async def refresh(interaction: discord.Interaction, store_choice: app_commands.Choice[str] = None):
+        '''
+        Manually refresh free games data from stores
+        '''
+        # Check if the command was send in a DM
+        if isinstance(interaction.channel, discord.DMChannel):
+            await interaction.response.send_message("Please use the `/refresh` command from the server the bot is in.", ephemeral=True)
+            return
+
+        try:
+            await interaction.response.defer(thinking=True, ephemeral=True)
+
+            # Determine which stores to refresh
+            stores_to_refresh = []
+            if store_choice is None or store_choice.value == "all":
+                stores_to_refresh = self.modules
+                status_msg = "Refreshing all stores..."
+            else:
+                for store in self.modules:
+                    if store.name == store_choice.value:
+                        stores_to_refresh.append(store)
+                        break
+                status_msg = f"Refreshing {store_choice.name}..."
+
+            if not stores_to_refresh:
+                await interaction.followup.send("❌ Store not found.", ephemeral=True)
+                return
+
+            await interaction.followup.send(status_msg, ephemeral=True)
+
+            # Import the update function from main
+            import main
+
+            # Refresh each store
+            results = []
+            for store in stores_to_refresh:
+                try:
+                    logger.info(f"Manual refresh requested for {store.name}")
+                    # Update the store
+                    await main.update(store)
+                    results.append(f"✅ {store.service_name}: Refreshed successfully")
+                except Exception as e:
+                    logger.error(f"Failed to refresh {store.name}: {e}")
+                    results.append(f"❌ {store.service_name}: Failed to refresh")
+
+            # Send results
+            result_message = "\n".join(results)
+            embed = discord.Embed(
+                title="🔄 Refresh Complete",
+                description=result_message,
+                color=0x00aff4
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
+        except Exception as e:
+            logger.error(f"Failed to execute refresh command: {e}")
+            await interaction.followup.send("❌ Failed to refresh stores. Please try again.", ephemeral=True)
+
     # MARK: Settings
     @app_commands.default_permissions(manage_guild=True)
     @self.tree.command(name='settings', description="Show bot settings like update channel and ping role")
@@ -207,7 +270,7 @@ def define_commands(self):
             view.message = message
             await message.edit(view=Settings_buttons(self, settings_message=message))
         except:
-            logger.warning("Failed discord command /settings", 
+            logger.warning("Failed discord command /settings",
                 extra={
                     '_server_id': interaction.guild_id
                 }
